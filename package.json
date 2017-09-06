@@ -1,0 +1,45 @@
+{
+  "name": "bubben",
+  "version": "0.0.1",
+  "description": "Slack bot for Hembevakning",
+  "license": "MIT",
+  "repository": "GustavPersson/bubben",
+  "author": {
+    "name": "Gustav Persson",
+    "email": "gustav.e.persson@gmail.com"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "xo && ava",
+    "build": "webpack --config webpack.config.js",
+    "watch": "webpack --config webpack.config.js --watch",
+    "start": "nodemon ./run.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    ""
+  ],
+  "dependencies": {
+    "@slack/client": "^3.12.0",
+    "homeassistant": "^0.1.4",
+    "redis": "^2.3.1",
+    "webpack-node-externals": "^1.6.0"
+  },
+  "devDependencies": {
+    "ava": "^0.3.0",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.0",
+    "webpack": "^3.5.6",
+    "xo": "^0.10.0"
+  },
+  "xo": {
+    "ignores": [
+      "test.js"
+    ]
+  }
+}
