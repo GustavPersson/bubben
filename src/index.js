@@ -132,7 +132,7 @@ function getChannels(allChannels) {
 
 
 bubben({
-  token: 'xoxb-237046551718-NROy3b6fG53GwazPCNCn8LhJ',
+  token: process.env.SLACK_TOKEN,
   autoReconnect: true,
   autoMark: true
 });
