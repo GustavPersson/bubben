@@ -17,7 +17,7 @@ function bubben(opts) {
   const hass = new HomeAssistant({
     // Your Home Assistant host
     // Optional, defaults to http://locahost
-    host: 'http://dj-friendzone.local',
+    // host: 'http://dj-friendzone.local',
 
     // Your Home Assistant port number
     // Optional, defaults to 8123
@@ -37,20 +37,15 @@ function bubben(opts) {
   hass.states.list().then(res => console.log(res));
 
   slack.on(CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
-    console.log(`Logged in as ${rtmStartData.self.name} of team ${rtmStartData.team.name}, but not yet connected to a channel`);
-    for (const c of rtmStartData.channels) {
-      if (c.is_member && c.name ==='spökhuset') { channel = c.id }
-    }
+    console.log(`Logged in as ${rtmStartData.self.name} of team ${rtmStartData.team.name}`);
   });
 
   slack.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
     console.log(channel);
-    // slack.sendMessage("Hello!", channel);
   });
 
   slack.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message) {
-    console.log('Message:', message); //this is no doubt the lamest possible message handler, but you get the idea
-    // sometimes the message is an image, so check that there's actual text first
+    console.log('Message:', message);
     if (message.text) {
       var msg = message.text.toLowerCase();
       var args = msg.split(' ');
@@ -59,17 +54,17 @@ function bubben(opts) {
         return;
       }
 
+      let responseMessage = '';
+
       switch (true) {
-        // say hi!
         case (msg.includes('hej bubben')):
           var responses = [
             ':zzz:',
             'jag är hungrig!'
           ];
 
-          var res = responses[Math.floor(Math.random() * responses.length)];
+          responseMessage = responses[Math.floor(Math.random() * responses.length)];
 
-          slack.sendMessage(res, channel);
           break;
         case (args.includes('släcka')): {
           let roomToToggle = '';
@@ -84,8 +79,8 @@ function bubben(opts) {
           hass.services.call('toggle', 'light', {
             entity_id: `light.${roomToToggle}`
           })
-            .then(() => slack.sendMessage("okej om jag orkar", channel))
-            .catch(err => slack.sendMessage("det gick inte! når inte upp :(", channel));
+            .then(() => responseMessage = "okej om jag orkar")
+            .catch(err => responseMessage = "det gick inte! når inte upp :(");
           break;
         }
         case (args.includes('tända')): {
@@ -101,11 +96,12 @@ function bubben(opts) {
           hass.services.call('toggle', 'light', {
             entity_id: `light.${roomToToggle}`
           })
-            .then(() => slack.sendMessage("okej jag tänder väl då", channel))
-            .catch(err => slack.sendMessage("det gick inte! når inte upp :(", channel))
+            .then(() => responseMessage = "okej jag tänder väl då")
+            .catch(err => responseMessage = "det gick inte! når inte upp :(")
           break;
         }
       }
+      slack.sendMessage(responseMessage, message.channel);
     }
   });
 
@@ -136,7 +132,7 @@ function getChannels(allChannels) {
 
 
 bubben({
-  token: 'xoxb-237046551718-dsF8uWpby1ugL5bS9mJAftkX',
+  token: 'xoxb-237046551718-NROy3b6fG53GwazPCNCn8LhJ',
   autoReconnect: true,
   autoMark: true
 });
