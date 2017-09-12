@@ -3,9 +3,12 @@ import {
   CLIENT_EVENTS,
   RTM_EVENTS
 } from '@slack/client';
+import { fromJS } from 'immutable';
 import HomeAssistant from 'homeassistant';
+import moment from 'moment';
 
 let channel;
+moment.locale('sv');
 
 function bubben(opts) {
   var slackToken = opts.token,
@@ -17,7 +20,7 @@ function bubben(opts) {
   const hass = new HomeAssistant({
     // Your Home Assistant host
     // Optional, defaults to http://locahost
-    // host: 'http://dj-friendzone.local',
+    host: 'http://dj-friendzone.local',
 
     // Your Home Assistant port number
     // Optional, defaults to 8123
@@ -31,10 +34,13 @@ function bubben(opts) {
     // Optional, defaults to false
     ignoreCert: false
   });
-  hass.status().then(res => console.log(res));
-  hass.config().then(res => console.log(res));
-  hass.discoveryInfo().then(res => console.log(res));
-  hass.states.list().then(res => console.log(res));
+  hass.status().then((res) => {
+    console.log(res);
+  });
+
+  hass.config().then(res => console.log('config', res));
+  hass.discoveryInfo().then(res => console.log('discoveryInfo', res));
+  hass.states.list().then(res => console.log('states',res));
 
   slack.on(CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
     console.log(`Logged in as ${rtmStartData.self.name} of team ${rtmStartData.team.name}`);
@@ -50,7 +56,7 @@ function bubben(opts) {
       var msg = message.text.toLowerCase();
       var args = msg.split(' ');
 
-      if (!args.includes('bubben')) {
+      if (!msg.includes('bubben')) {
         return;
       }
 
@@ -60,11 +66,12 @@ function bubben(opts) {
         case (msg.includes('hej bubben')):
           var responses = [
             ':zzz:',
-            'jag är hungrig!'
+            'jag är hungrig!',
+            'jag kan inte svara nu, ligger i min kalsonglåda'
           ];
 
           responseMessage = responses[Math.floor(Math.random() * responses.length)];
-
+          slack.sendMessage(responseMessage, message.channel);
           break;
         case (args.includes('släcka')): {
           let roomToToggle = '';
@@ -79,8 +86,8 @@ function bubben(opts) {
           hass.services.call('toggle', 'light', {
             entity_id: `light.${roomToToggle}`
           })
-            .then(() => responseMessage = "okej om jag orkar")
-            .catch(err => responseMessage = "det gick inte! når inte upp :(");
+            .then(() => slack.sendMessage("okej om jag orkar", message.channel))
+            .catch(err => slack.sendMessage("det gick inte! når inte upp :(", message.channel))
           break;
         }
         case (args.includes('tända')): {
@@ -96,12 +103,28 @@ function bubben(opts) {
           hass.services.call('toggle', 'light', {
             entity_id: `light.${roomToToggle}`
           })
-            .then(() => responseMessage = "okej jag tänder väl då")
-            .catch(err => responseMessage = "det gick inte! når inte upp :(")
+            .then(() => slack.sendMessage("okej jag tänder väl då", message.channel))
+            .catch(err => slack.sendMessage("det gick inte! når inte upp :(", message.channel))
           break;
         }
+        case (args.includes('läget')): {
+          hass.states.list().then((res) => {
+            const status = fromJS(res);
+
+            slack.sendMessage('Ska kolla!', message.channel);
+
+            const lights = status.filter(item => item.get('entity_id').includes('light.'));
+            lights.forEach((light) => {
+              const name = light.getIn(['attributes', 'friendly_name']);
+              const on = light.get('state') === 'on';
+              slack.sendMessage(`${name} är ${on ? 'tänd' : 'släckt'} sedan ${moment(light.get('last_changed')).fromNow()}`, message.channel);
+            });
+
+            responseMessage = 'det var allt, nu ska jag lägga mig och titta ut genom fönstret igen';
+            slack.sendMessage(responseMessage, message.channel);
+          });
+        }
       }
-      slack.sendMessage(responseMessage, message.channel);
     }
   });
 
@@ -130,6 +153,7 @@ function getChannels(allChannels) {
   return channels;
 }
 
+console.log(process.env.SLACK_TOKEN);
 
 bubben({
   token: process.env.SLACK_TOKEN,
