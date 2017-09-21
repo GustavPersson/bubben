@@ -89,6 +89,8 @@ _moment2.default.locale('sv');
 
 function bubben(opts) {
   var slackToken = opts.token,
+      apiPassword = opts.apiPassword,
+      host = opts.host,
       autoReconnect = opts.autoReconnect || true,
       autoMark = opts.autoMark || true;
 
@@ -97,7 +99,7 @@ function bubben(opts) {
   var hass = new _homeassistant2.default({
     // Your Home Assistant host
     // Optional, defaults to http://locahost
-    host: 'http://dj-friendzone.local',
+    host: host,
 
     // Your Home Assistant port number
     // Optional, defaults to 8123
@@ -105,7 +107,7 @@ function bubben(opts) {
 
     // Your Home Assistant API password
     // Optional
-    // password: 'api_password',
+    password: apiPassword,
 
     // Ignores SSL certificate errors, use with caution
     // Optional, defaults to false
@@ -113,10 +115,14 @@ function bubben(opts) {
   });
   hass.status().then(function (res) {
     console.log(res);
+  }).catch(function (err) {
+    return console.log(err);
   });
 
   hass.config().then(function (res) {
     return console.log('config', res);
+  }).catch(function (err) {
+    return console.log('error', err);
   });
   hass.discoveryInfo().then(function (res) {
     return console.log('discoveryInfo', res);
@@ -134,6 +140,10 @@ function bubben(opts) {
   });
 
   slack.on(_client.RTM_EVENTS.MESSAGE, function handleRtmMessage(message) {
+    function handleError(err) {
+      slack.sendMessage('jag känner inte för att svara just nu', message.channel);
+    }
+
     console.log('Message:', message);
     if (message.text) {
       var msg = message.text.toLowerCase();
@@ -210,7 +220,39 @@ function bubben(opts) {
 
               responseMessage = 'det var allt, nu ska jag lägga mig och titta ut genom fönstret igen';
               slack.sendMessage(responseMessage, message.channel);
+            }).catch(function (err) {
+              return handleError(err);
             });
+            break;
+          }
+        case msg.includes('var är'):
+          {
+            hass.states.list().then(function (res) {
+              var status = (0, _immutable.fromJS)(res);
+              var searchterm = args[args.indexOf('är') + 1];
+
+              var people = status.filter(function (item) {
+                return item.get('entity_id').includes(searchterm);
+              });
+
+              if (people.size < 1) {
+                slack.sendMessage('det vet jag inte vem det är ju, jag är bara en katt, inte google.', message.channel);
+                return;
+              }
+
+              var person = people.first();
+
+              if (person.get('state') === 'home') {
+                slack.sendMessage(searchterm + ' \xE4r hemma!', message.channel);
+              } else if (person.get('state') === 'not_home') {
+                slack.sendMessage(searchterm + ' \xE4r inte hemma :crying_cat_face:', message.channel);
+              } else {
+                slack.sendMessage(searchterm + ' \xE4r p\xE5 ' + person.get('state'), message.channel);
+              }
+            }).catch(function (err) {
+              return handleError(err);
+            });
+            break;
           }
       }
     }
@@ -240,10 +282,10 @@ function getChannels(allChannels) {
   return channels;
 }
 
-console.log(process.env.SLACK_TOKEN);
-
 bubben({
   token: process.env.SLACK_TOKEN,
+  apiPassword: process.env.HASS_PASSWORD,
+  host: process.env.HOST,
   autoReconnect: true,
   autoMark: true
 });
