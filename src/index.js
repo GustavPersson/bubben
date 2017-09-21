@@ -54,6 +54,7 @@ function bubben(opts) {
 
   slack.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message) {
     function handleError(err) {
+      console.error(err);
       slack.sendMessage('jag känner inte för att svara just nu', message.channel);
     }
 
@@ -136,7 +137,7 @@ function bubben(opts) {
         case (msg.includes('var är')): {
           hass.states.list().then((res) => {
             const status = fromJS(res);
-            const searchterm = args[args.indexOf('är') + 1];
+            const searchterm = args[args.indexOf('är') + 1].replace(/[&\/\\#,+()$~%.'":*?!<>{}]/g, '');
 
             const people = status.filter(item => item.get('entity_id').includes(searchterm));
 
