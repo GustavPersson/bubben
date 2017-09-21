@@ -135,6 +135,22 @@ function bubben(opts) {
           break;
         }
         case (msg.includes('var är')): {
+          if (msg.includes('plumsan')) {
+            var responses = [
+              'hon har klättrat upp på nått högt!',
+              'gömmer sig på balkongen!!! nej skojade, hon sover i soffan',
+              'hon jagar en laserpekare',
+              'hon är och bajsar!',
+              'hon har gömt sig i en papperspåse',
+              'hon ligger i fönstret!',
+              'hon ligger i soffan'
+            ];
+
+            responseMessage = responses[Math.floor(Math.random() * responses.length)];
+            slack.sendMessage(responseMessage, message.channel);
+            return;
+          }
+
           hass.states.list().then((res) => {
             const status = fromJS(res);
             const searchterm = args[args.indexOf('är') + 1].replace(/[&\/\\#,+()$~%.'":*?!<>{}]/g, '');
