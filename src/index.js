@@ -6,6 +6,7 @@ import {
 import { fromJS } from 'immutable';
 import HomeAssistant from 'homeassistant';
 import moment from 'moment';
+import axios from 'axios';
 
 let channel;
 moment.locale('sv');
@@ -14,6 +15,7 @@ function bubben(opts) {
   var slackToken = opts.token,
       apiPassword = opts.apiPassword,
       host = opts.host,
+      googleApi = opts.googleApi,
       autoReconnect = opts.autoReconnect || true,
       autoMark = opts.autoMark || true;
 
@@ -167,7 +169,13 @@ function bubben(opts) {
             if (person.get('state') === 'home') {
               slack.sendMessage(`${searchterm} är hemma!`, message.channel);
             } else if (person.get('state') === 'not_home') {
-              slack.sendMessage(`${searchterm} är inte hemma :crying_cat_face:`, message.channel);
+              const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${person.getIn(['attributes', 'latitude'])},${person.getIn(['attributes', 'longitude'])}&key=${googleApi}`
+
+              axios.get(url).then((res) => {
+                const formatted_address = res.data.results[0].formatted_address;
+                slack.sendMessage(`${searchterm} är på ${formatted_address}`, message.channel);
+              }).catch(() => slack.sendMessage(`${searchterm} är inte hemma :crying_cat_face:`, message.channel));
+
             } else {
               slack.sendMessage(`${searchterm} är på ${person.get('state')}`, message.channel);
             }
@@ -208,6 +216,7 @@ bubben({
   token: process.env.SLACK_TOKEN,
   apiPassword: process.env.HASS_PASSWORD,
   host: process.env.HOST,
+  googleApi: process.env.GOOGLE_API,
   autoReconnect: true,
   autoMark: true
 });

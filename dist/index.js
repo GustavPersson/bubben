@@ -82,6 +82,10 @@ var _moment = __webpack_require__(4);
 
 var _moment2 = _interopRequireDefault(_moment);
 
+var _axios = __webpack_require__(5);
+
+var _axios2 = _interopRequireDefault(_axios);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var channel = void 0;
@@ -91,6 +95,7 @@ function bubben(opts) {
   var slackToken = opts.token,
       apiPassword = opts.apiPassword,
       host = opts.host,
+      googleApi = opts.googleApi,
       autoReconnect = opts.autoReconnect || true,
       autoMark = opts.autoMark || true;
 
@@ -254,7 +259,14 @@ function bubben(opts) {
               if (person.get('state') === 'home') {
                 slack.sendMessage(searchterm + ' \xE4r hemma!', message.channel);
               } else if (person.get('state') === 'not_home') {
-                slack.sendMessage(searchterm + ' \xE4r inte hemma :crying_cat_face:', message.channel);
+                var url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + person.getIn(['attributes', 'latitude']) + ',' + person.getIn(['attributes', 'longitude']) + '&key=' + googleApi;
+
+                _axios2.default.get(url).then(function (res) {
+                  var formatted_address = res.data.results[0].formatted_address;
+                  slack.sendMessage(searchterm + ' \xE4r p\xE5 ' + formatted_address, message.channel);
+                }).catch(function () {
+                  return slack.sendMessage(searchterm + ' \xE4r inte hemma :crying_cat_face:', message.channel);
+                });
               } else {
                 slack.sendMessage(searchterm + ' \xE4r p\xE5 ' + person.get('state'), message.channel);
               }
@@ -295,6 +307,7 @@ bubben({
   token: process.env.SLACK_TOKEN,
   apiPassword: process.env.HASS_PASSWORD,
   host: process.env.HOST,
+  googleApi: process.env.GOOGLE_API,
   autoReconnect: true,
   autoMark: true
 });
@@ -322,6 +335,12 @@ module.exports = require("homeassistant");
 /***/ (function(module, exports) {
 
 module.exports = require("moment");
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports) {
+
+module.exports = require("axios");
 
 /***/ })
 /******/ ]);
