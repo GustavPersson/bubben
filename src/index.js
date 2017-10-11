@@ -1,5 +1,6 @@
 import {
   RtmClient,
+  WebClient,
   CLIENT_EVENTS,
   RTM_EVENTS
 } from '@slack/client';
@@ -20,6 +21,7 @@ function bubben(opts) {
       autoMark = opts.autoMark || true;
 
   var slack = new RtmClient(slackToken);
+  var slackWeb = new WebClient(slackToken);
 
   const hass = new HomeAssistant({
     // Your Home Assistant host
@@ -175,13 +177,21 @@ function bubben(opts) {
                 const formatted_address = res.data.results[0].formatted_address;
                 slack.sendMessage(`${searchterm} är på ${formatted_address}`, message.channel);
               }).catch(() => slack.sendMessage(`${searchterm} är inte hemma :crying_cat_face:`, message.channel));
-
             } else {
               slack.sendMessage(`${searchterm} är på ${person.get('state')}`, message.channel);
             }
           })
           .catch((err) => handleError(err));
           break;
+        }
+        case (msg.includes('vem är bäst')): {
+          slackWeb.users.info(message.user, (err, response) => {
+            if (response.user.real_name.toLowerCase().includes('gustav')) {
+              slack.sendMessage('Matte!', message.channel);
+            } else {
+              slack.sendMessage('Husse!', message.channel);
+            }
+          });
         }
       }
     }

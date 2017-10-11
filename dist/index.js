@@ -100,6 +100,7 @@ function bubben(opts) {
       autoMark = opts.autoMark || true;
 
   var slack = new _client.RtmClient(slackToken);
+  var slackWeb = new _client.WebClient(slackToken);
 
   var hass = new _homeassistant2.default({
     // Your Home Assistant host
@@ -274,6 +275,16 @@ function bubben(opts) {
               return handleError(err);
             });
             break;
+          }
+        case msg.includes('vem är bäst'):
+          {
+            slackWeb.users.info(message.user, function (err, response) {
+              if (response.user.real_name.toLowerCase().includes('gustav')) {
+                slack.sendMessage('Matte!', message.channel);
+              } else {
+                slack.sendMessage('Husse!', message.channel);
+              }
+            });
           }
       }
     }
