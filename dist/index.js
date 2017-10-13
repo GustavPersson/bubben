@@ -92,12 +92,11 @@ var channel = void 0;
 _moment2.default.locale('sv');
 
 function bubben(opts) {
-  var slackToken = opts.token,
+  var slackToken = opts.slackToken,
       apiPassword = opts.apiPassword,
       host = opts.host,
-      googleApi = opts.googleApi,
-      autoReconnect = opts.autoReconnect || true,
-      autoMark = opts.autoMark || true;
+      googleApi = opts.googleApi;
+
 
   var slack = new _client.RtmClient(slackToken);
   var slackWeb = new _client.WebClient(slackToken);
@@ -145,7 +144,7 @@ function bubben(opts) {
     console.log(channel);
   });
 
-  slack.on(_client.RTM_EVENTS.MESSAGE, function handleRtmMessage(message) {
+  slack.on(_client.RTM_EVENTS.MESSAGE, function (message) {
     function handleError(err) {
       console.error(err);
       slack.sendMessage('jag känner inte för att svara just nu', message.channel);
@@ -183,9 +182,9 @@ function bubben(opts) {
             hass.services.call('toggle', 'light', {
               entity_id: 'light.' + roomToToggle
             }).then(function () {
-              return slack.sendMessage("okej om jag orkar", message.channel);
+              return slack.sendMessage('okej om jag orkar', message.channel);
             }).catch(function (err) {
-              return slack.sendMessage("det gick inte! når inte upp :(", message.channel);
+              return slack.sendMessage('det gick inte! når inte upp :(', message.channel);
             });
             break;
           }
@@ -203,9 +202,9 @@ function bubben(opts) {
             hass.services.call('toggle', 'light', {
               entity_id: 'light.' + _roomToToggle
             }).then(function () {
-              return slack.sendMessage("okej jag tänder väl då", message.channel);
+              return slack.sendMessage('okej jag tänder väl då', message.channel);
             }).catch(function (err) {
-              return slack.sendMessage("det gick inte! når inte upp :(", message.channel);
+              return slack.sendMessage('det gick inte! når inte upp :(', message.channel);
             });
             break;
           }
@@ -235,9 +234,9 @@ function bubben(opts) {
         case msg.includes('var är'):
           {
             if (msg.includes('plumsan')) {
-              var responses = ['hon har klättrat upp på nått högt!', 'gömmer sig på balkongen!!! nej skojade, hon sover i soffan', 'hon jagar en laserpekare', 'hon är och bajsar!', 'hon har gömt sig i en papperspåse', 'hon ligger i fönstret!', 'hon ligger i soffan'];
+              var _responses = ['hon har klättrat upp på nått högt!', 'gömmer sig på balkongen!!! nej skojade, hon sover i soffan', 'hon jagar en laserpekare', 'hon är och bajsar!', 'hon har gömt sig i en papperspåse', 'hon ligger i fönstret!', 'hon ligger i soffan'];
 
-              responseMessage = responses[Math.floor(Math.random() * responses.length)];
+              responseMessage = _responses[Math.floor(Math.random() * _responses.length)];
               slack.sendMessage(responseMessage, message.channel);
               return;
             }
@@ -285,6 +284,43 @@ function bubben(opts) {
                 slack.sendMessage('Husse!', message.channel);
               }
             });
+            break;
+          }
+        case msg.includes('hur varmt är det'):
+          {
+            slack.sendMessage('Ska kolla på balkongen', message.channel);
+
+            var promises = [];
+            promises.push(hass.states.get('sensor', 'dark_sky_temperature'));
+            promises.push(hass.states.get('sensor', 'dark_sky_apparent_temperature'));
+
+            Promise.all(promises).then(function (response) {
+              slack.sendMessage('Det \xE4r ' + response[0].state + ' grader varmt, men k\xE4nns som ' + response[1].state + ' grader.', message.channel);
+            });
+            break;
+          }
+        case msg.includes('ska vädret bli'):
+          {
+            slack.sendMessage('Ska skicka upp plumsan i väderballongen.', message.channel);
+            switch (true) {
+              case msg.includes('morgon'):
+                hass.states.get('sensor', 'dark_sky_hourly_summary').then(function (response) {
+                  slack.sendMessage('Hon s\xE4ger s\xE5h\xE4r: ' + response.state, message.channel);
+                });
+                break;
+              case msg.includes('timme') || msg.includes('dag'):
+                hass.states.get('sensor', 'dark_sky_minutely_summary').then(function (response) {
+                  slack.sendMessage('Hon s\xE4ger s\xE5h\xE4r: ' + response.state, message.channel);
+                });
+                break;
+              case msg.includes('vecka'):
+              default:
+                hass.states.get('sensor', 'dark_sky_daily_summary').then(function (response) {
+                  slack.sendMessage('Hon s\xE4ger s\xE5h\xE4r: ' + response.state, message.channel);
+                });
+                break;
+            }
+            break;
           }
       }
     }
@@ -295,32 +331,13 @@ function bubben(opts) {
   slack.on('error', function (err) {
     console.log('Error:', err);
   });
-};
-
-function upper(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function getChannels(allChannels) {
-  var channels = [];
-
-  for (var id in allChannels) {
-    var channel = allChannels[id];
-    if (channel.is_member) {
-      channels.push(channel.name);
-    }
-  }
-
-  return channels;
 }
 
 bubben({
-  token: process.env.SLACK_TOKEN,
+  slackToken: process.env.SLACK_TOKEN,
   apiPassword: process.env.HASS_PASSWORD,
   host: process.env.HOST,
-  googleApi: process.env.GOOGLE_API,
-  autoReconnect: true,
-  autoMark: true
+  googleApi: process.env.GOOGLE_API
 });
 
 /***/ }),
