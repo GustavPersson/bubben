@@ -218,10 +218,21 @@ function bubben(opts) {
               var lights = status.filter(function (item) {
                 return item.get('entity_id').includes('light.');
               });
+              var mediaPlayers = status.filter(function (item) {
+                return item.get('entity_id').includes('media_player.');
+              });
+
               lights.forEach(function (light) {
                 var name = light.getIn(['attributes', 'friendly_name']);
                 var on = light.get('state') === 'on';
                 slack.sendMessage(name + ' \xE4r ' + (on ? 'tänd' : 'släckt') + ' sedan ' + (0, _moment2.default)(light.get('last_changed')).fromNow(), message.channel);
+              });
+
+              mediaPlayers.forEach(function (mediaPlayer) {
+                var name = mediaPlayer.getIn(['attributes', 'friendly_name']);
+                var on = mediaPlayer.get('state') === 'playing';
+
+                slack.sendMessage(name + ' spelar ' + (on ? mediaPlayer.getIn(['attributes', 'media_title']) : 'inget'), message.channel);
               });
 
               responseMessage = 'det var allt, nu ska jag lägga mig och titta ut genom fönstret igen';
@@ -234,7 +245,7 @@ function bubben(opts) {
         case msg.includes('var är'):
           {
             if (msg.includes('plumsan')) {
-              var _responses = ['hon har klättrat upp på nått högt!', 'gömmer sig på balkongen!!! nej skojade, hon sover i soffan', 'hon jagar en laserpekare', 'hon är och bajsar!', 'hon har gömt sig i en papperspåse', 'hon ligger i fönstret!', 'hon ligger i soffan'];
+              var _responses = ['hon har klättrat upp på nått högt!', 'gömmer sig på balkongen!!! nej skojade, hon sover i soffan', 'hon jagar en laserpekare', 'hon är och bajsar!', 'hon har gömt sig i en papperspåse', 'hon ligger i fönstret!', 'hon ligger i soffan', 'hon ligger på en fyrkant på golvet!'];
 
               responseMessage = _responses[Math.floor(Math.random() * _responses.length)];
               slack.sendMessage(responseMessage, message.channel);
@@ -320,6 +331,10 @@ function bubben(opts) {
                 });
                 break;
             }
+            break;
+          }
+        default:
+          {
             break;
           }
       }

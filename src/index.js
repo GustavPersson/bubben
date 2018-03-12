@@ -126,10 +126,19 @@ function bubben(opts) {
             slack.sendMessage('Ska kolla!', message.channel);
 
             const lights = status.filter(item => item.get('entity_id').includes('light.'));
+            const mediaPlayers = status.filter(item => item.get('entity_id').includes('media_player.'));
+
             lights.forEach((light) => {
               const name = light.getIn(['attributes', 'friendly_name']);
               const on = light.get('state') === 'on';
               slack.sendMessage(`${name} är ${on ? 'tänd' : 'släckt'} sedan ${moment(light.get('last_changed')).fromNow()}`, message.channel);
+            });
+
+            mediaPlayers.forEach((mediaPlayer) => {
+              const name = mediaPlayer.getIn(['attributes', 'friendly_name']);
+              const on = mediaPlayer.get('state') === 'playing';
+
+              slack.sendMessage(`${name} spelar ${on ? mediaPlayer.getIn(['attributes', 'media_title']) : 'inget'}`, message.channel);
             });
 
             responseMessage = 'det var allt, nu ska jag lägga mig och titta ut genom fönstret igen';
@@ -148,6 +157,7 @@ function bubben(opts) {
               'hon har gömt sig i en papperspåse',
               'hon ligger i fönstret!',
               'hon ligger i soffan',
+              'hon ligger på en fyrkant på golvet!'
             ];
 
             responseMessage = responses[Math.floor(Math.random() * responses.length)];
@@ -226,6 +236,9 @@ function bubben(opts) {
               });
               break;
           }
+          break;
+        }
+        default: {
           break;
         }
       }
